@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>识别结果 - AI花卉分类系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .image-section {
+            text-align: center;
+        }
+
+        .uploaded-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            object-fit: cover;
+        }
+
+        .image-title {
+            margin-top: 15px;
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        .result-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .prediction-card {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+        }
+
+        .prediction-card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            text-transform: capitalize;
+        }
+
+        .confidence {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .confidence-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .model-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #667eea;
+        }
+
+        .model-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .confidence-bar {
+            background: rgba(255, 255, 255, 0.3);
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 5px;
+            transition: width 1s ease;
+        }
+
+        .flower-facts {
+            background: linear-gradient(45deg, #a8e6cf, #dcedc1);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+
+        .flower-facts h3 {
+            color: #2d5a27;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        .flower-facts p {
+            color: #2d5a27;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .result-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+            
+            .confidence {
+                font-size: 2.5rem;
+            }
+        }
+
+        .success-animation {
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-check-circle"></i> 识别完成</h1>
+            <p>AI花卉识别结果</p>
+        </div>
+
+        <div class="content">
+            <div class="result-grid success-animation">
+                <div class="image-section">
+                    <img src="{{ url_for('uploaded_file', filename=filename) }}" alt="上传的图片" class="uploaded-image">
+                    <div class="image-title">
+                        <i class="fas fa-image"></i> 上传的图片
+                    </div>
+                </div>
+
+                <div class="result-section">
+                    <div class="prediction-card">
+                        <h2><i class="fas fa-seedling"></i> {{ cls_name }}</h2>
+                        <div class="confidence">{{ "%.1f" | format(prob * 100) }}%</div>
+                        <div class="confidence-label">置信度</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: {{ prob * 100 }}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="model-info">
+                        <h3><i class="fas fa-brain"></i> 模型信息</h3>
+                        <div class="info-item">
+                            <span class="info-label">使用模型:</span>
+                            <span class="info-value">{{ model_name.upper() }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">权重类型:</span>
+                            <span class="info-value">{{ weight_type }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">识别类别:</span>
+                            <span class="info-value">{{ cls_name }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">置信度:</span>
+                            <span class="info-value">{{ "%.2f" | format(prob * 100) }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flower-facts success-animation" style="animation-delay: 0.3s;">
+                <h3><i class="fas fa-lightbulb"></i> 关于 {{ cls_name }}</h3>
+                <p id="flowerDescription">这是一种美丽的花卉，具有独特的特征和观赏价值。每种花都有其独特的生长环境和特点，为我们的世界增添了无限的色彩和美丽。</p>
+            </div>
+
+            <div class="actions success-animation" style="animation-delay: 0.6s;">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> 重新上传
+                </a>
+                <a href="{{ url_for('show_chart', model_name=model_name, weight_type=weight_type_param) }}" class="btn btn-secondary" target="_blank">
+                    <i class="fas fa-chart-line"></i> 查看训练曲线
+                </a>
+                <button onclick="shareResult()" class="btn btn-outline">
+                    <i class="fas fa-share-alt"></i> 分享结果
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 动画效果
+        window.addEventListener('load', function() {
+            const confidenceFill = document.querySelector('.confidence-fill');
+            setTimeout(() => {
+                confidenceFill.style.width = '{{ prob * 100 }}%';
+            }, 500);
+        });
+
+        // 分享功能
+        function shareResult() {
+            const result = {
+                flower: '{{ cls_name }}',
+                confidence: '{{ "%.1f" | format(prob * 100) }}%',
+                model: '{{ model_name.upper() }}'
+            };
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'AI花卉识别结果',
+                    text: `我用AI识别出了这是 ${result.flower}，置信度 ${result.confidence}！`,
+                    url: window.location.href
+                });
+            } else {
+                // 复制到剪贴板
+                const text = `我用AI识别出了这是 ${result.flower}，置信度 ${result.confidence}！模型：${result.model}`;
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('结果已复制到剪贴板！');
+                });
+            }
+        }
+
+        // 根据花卉名称显示描述
+        const flowerDescriptions = {
+            'rose': '玫瑰是世界上最受欢迎的花卉之一，象征着爱情和美丽。',
+            'sunflower': '向日葵总是面向太阳，象征着积极向上和忠诚。',
+            'tulip': '郁金香是荷兰的国花，代表着优雅和纯洁。',
+            'daffodil': '水仙花是春天的使者，象征着新生和希望。',
+            'lily': '百合花纯洁高雅，在许多文化中都被视为神圣的象征。',
+            'orchid': '兰花是高贵典雅的代表，有着"花中君子"的美誉。',
+            'iris': '鸢尾花色彩丰富，象征着信念、智慧和勇气。',
+            'petunia': '矮牵牛花期长，颜色鲜艳，是很受欢迎的观赏花卉。',
+            'marigold': '万寿菊色彩鲜艳，寓意长寿和吉祥。',
+            'carnation': '康乃馨是母亲节的传统花卉，象征着母爱和感恩。'
+        };
+
+        const flowerName = '{{ cls_name }}'.toLowerCase();
+        const descriptionElement = document.getElementById('flowerDescription');
+        
+        // 查找匹配的描述
+        for (const [key, description] of Object.entries(flowerDescriptions)) {
+            if (flowerName.includes(key)) {
+                descriptionElement.textContent = description;
+                break;
+            }
+        }
+
+        // 添加成功提示音效果
+        function playSuccessSound() {
+            // 创建音频上下文（如果支持的话）
+            if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+                const audioContext = new (AudioContext || webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            }
+        }
+
+        // 页面加载时播放成功音效

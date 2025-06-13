@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>训练日志图表</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #0056b3;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        .chart {
+            width: 48%;
+            height: 400px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        @media (max-width: 768px) {
+            .chart {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;">
+            <h1 id="chart-title" style="margin:0;">{{ model_name }} ({{ weight_type_display }}) 训练日志</h1>
+            <a href="{{ url_for('index') }}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;border-radius:6px;text-decoration:none;font-weight:600;font-size:1.05em;box-shadow:0 2px 8px rgba(102,126,234,0.12);transition:background 0.3s;">
+                <i class="fas fa-arrow-left"></i> 返回主页
+            </a>
+        </div>
+        <div style="margin-bottom:20px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;">
+            <label for="model-select" style="font-weight:600;color:#0056b3;">模型：</label>
+            <select id="model-select" style="padding:6px 16px;border-radius:6px;border:1.5px solid #0056b3;font-size:1.05em;outline:none;">
+                {% for m in model_list %}
+                <option value="{{ m }}" {% if m==model_name %}selected{% endif %}>{{ m.replace('_', ' ').title() }}</option>
+                {% endfor %}
+            </select>
+            <label for="weight-select" style="font-weight:600;color:#0056b3;">权重：</label>
+            <select id="weight-select" style="padding:6px 16px;border-radius:6px;border:1.5px solid #0056b3;font-size:1.05em;outline:none;">
+                <option value="pretrain" {% if weight_type=='pretrain' %}selected{% endif %}>预训练</option>
+                <option value="custom" {% if weight_type=='custom' %}selected{% endif %}>自定义</option>
+            </select>
+            <button id="go-btn" style="padding:7px 22px;border-radius:6px;background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;border:none;cursor:pointer;font-weight:600;font-size:1.05em;box-shadow:0 2px 8px rgba(102,126,234,0.12);transition:background 0.3s;">
+                <i class="fas fa-sync-alt"></i> 切换
+            </button>
+        </div>
+        <div class="chart-container">
+            <div id="accuracyChart" class="chart"></div>
+            <div id="precisionChart" class="chart"></div>
+            <div id="recallChart" class="chart"></div>
+            <div id="f1Chart" class="chart"></div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var data = {{ data | tojson }};
+        function createChart(elementId, title, yAxisName, seriesData) {
+            var chartDom = document.getElementById(elementId);
+            var myChart = echarts.init(chartDom);
+            var option = {
+                title: { text: title, left: 'center' },
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', name: 'Epoch', data: data.epoch },
+                yAxis: { type: 'value', name: yAxisName },
+                series: [{
+                    name: yAxisName,
+                    type: 'line',
+                    data: seriesData,
+                    smooth: true,
+                    lineStyle: { width: 3 },
+                    itemStyle: { opacity: 0 },
+                    emphasis: { itemStyle: { opacity: 1 } }
+                }]
+            };
+            myChart.setOption(option);
+            window.addEventListener('resize', function () { myChart.resize(); });
+        }
+        createChart('accuracyChart', '验证准确率', '准确率', data.val_acc);
+        createChart('precisionChart', '验证精确率', '精确率', data.val_precision);
+        createChart('recallChart', '验证召回率', '召回率', data.val_recall);
+        createChart('f1Chart', '验证F1分数', 'F1分数', data.val_f1);
+        // 切换按钮事件
+        document.getElementById('go-btn').onclick = function(e) {
+            e.preventDefault();
+            var m = document.getElementById('model-select').value;
+            var w = document.getElementById('weight-select').value;
+            window.location.href = `/chart?model_name=${m}&weight_type=${w}`; 
+        };
+    </script>
+</body>
+</html>
